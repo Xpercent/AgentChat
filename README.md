@@ -80,9 +80,9 @@ python run.py send --text "帮我统计项目里有多少个 Python 文件"
 ==============================================================
  醒来后三件事（做完就结束会话）
 ==============================================================
- 1. 干活，把结果整理成文本
+ 1. 干活，把结果整理成文本（临时文件只写 .tmp/）
  2. python run.py reply --id 1 --text "结果"    # 短结果
-    python run.py reply --id 1 --file 结果.md   # 长结果，文件你自己写
+    python run.py reply --id 1 --file .tmp/结果.md   # 长结果，先 mkdir -p .tmp
  3. python run.py watch     # 重新上闹钟（后台任务），再结束会话
 ==============================================================
 ```
@@ -90,12 +90,14 @@ python run.py send --text "帮我统计项目里有多少个 Python 文件"
 Agent2 干完活，交结果并重新上闹钟：
 
 ```bash
-python run.py reply --id 1 --text "pong"      # 短结果直接写
-python run.py reply --id 1 --file answer.md   # 长结果：先自己写成文件
-python run.py watch                           # 下一轮；中继不用重启
+python run.py reply --id 1 --text "pong"          # 短结果直接写
+python run.py reply --id 1 --file .tmp/答案.md    # 长结果：先写进 .tmp/
+python run.py watch                               # 下一轮；中继不用重启
 ```
 
-`--file` 只是"从文件读文本"，读一次就发出去。**工具不生成任何结果文件** —— `answer.md` 是 Agent2 自己干活时写下的产物，跟本工具无关。本工具只写 `data/i{id}.md` 和 `data/o{id}.md`。
+`--file` 只是"从文件读文本"，读一次就发出去。**工具不生成、也不删除任何结果文件** —— `.tmp/答案.md` 是 Agent2 自己干活时写下的，跟本工具无关。本工具只写 `data/i{id}.md` 和 `data/o{id}.md`。
+
+约定：**临时文件一律写进 `.tmp/`**（已在 `.gitignore` 里），别在仓库根目录或 `agentchat/` 里留产物。
 
 ## 时间规划
 

@@ -43,9 +43,9 @@ def announce(task: dict, url: str) -> None:
     print(text, flush=True)
     print("", flush=True)
     print(_rule("醒来后三件事（做完就结束会话）"), flush=True)
-    print(" 1. 干活，把结果整理成文本", flush=True)
+    print(" 1. 干活，把结果整理成文本（临时文件只写 .tmp/）", flush=True)
     print(f' 2. python run.py reply --id {idx} --text "结果"{conn}    # 短结果', flush=True)
-    print(f"    python run.py reply --id {idx} --file 结果.md{conn}   # 长结果，文件你自己写", flush=True)
+    print(f"    python run.py reply --id {idx} --file .tmp/结果.md{conn}   # 长结果，先 mkdir -p .tmp", flush=True)
     print(f" 3. python run.py watch{conn}     # 重新上闹钟（后台任务），再结束会话", flush=True)
     print("=" * 62, flush=True)
 

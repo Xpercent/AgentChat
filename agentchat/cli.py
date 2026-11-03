@@ -282,7 +282,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  python run.py send --text \"帮我查一下今天的行情\"    # 最多等 20 分钟\n"
             "Agent2 被唤醒后：\n"
             "  python run.py reply --id 1 --text \"结果\"          # 短结果\n"
-            "  python run.py reply --id 1 --file 结果.md           # 长结果，文件自己写\n"
+            "  python run.py reply --id 1 --file .tmp/结果.md  # 长结果，写进 .tmp/\n"
             "  python run.py watch                             # 重新上闹钟\n"
         ),
     )

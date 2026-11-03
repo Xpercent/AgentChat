@@ -43,16 +43,16 @@ python run.py watch     # ②闹钟：阻塞等任务，任务一到就退出
 
 ```bash
 # 1. 干活，把结果整理成文本
-python run.py reply --id 3 --text "结果"      # 2. 交结果，二选一
-python run.py reply --id 3 --file 结果.md     #    长结果走文件（你写；路径按当前目录）
-python run.py watch                           # 3. 重新上闹钟（后台任务），再结束会话
+python run.py reply --id 3 --text "结果"         # 2. 交结果，二选一
+python run.py reply --id 3 --file .tmp/结果.md   #    长结果；先写进 .tmp/（mkdir -p .tmp）
+python run.py watch                              # 3. 重新上闹钟（后台任务），再结束会话
 ```
 
-`--file` 只是"从文件读文本"，工具只读一次、不生成任何文件。结果短就直接 `--text`。
-本工具自己只写 `data/i{id}.md` 和 `data/o{id}.md`，别的不碰。
+`--file` 只是"从文件读文本"，只读一次、不生成也不删文件；本工具自己只写 `data/i{id}.md` 和 `data/o{id}.md`。**要落文件一律写进 `.tmp/`**（先 `mkdir -p .tmp`）。
 
 铁律：
 
+- **临时文件只写 `.tmp/`**，仓库根目录和 `agentchat/` 里不许留任何产物。
 - 中继和闹钟都必须是**后台任务**；前台跑 `watch` 会一直阻塞。
 - 闹钟**不能**自己拉起中继：闹钟结束时它的整棵进程树会被回收，派生出来的中继活不过它。
 - 一次唤醒只对应一个任务。`reply` 之后必须重新 `watch`，否则下一单没人接、只能等超时。
