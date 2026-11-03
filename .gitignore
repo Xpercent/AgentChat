@@ -1,0 +1,19 @@
+# 运行时产物
+data/
+.tmp/
+*.md.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 本地工作区（不随仓库分发）
+.workbuddy-ai/
+
+# 编辑器
+.vscode/
+.idea/
+.DS_Store
