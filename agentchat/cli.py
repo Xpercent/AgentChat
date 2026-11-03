@@ -56,7 +56,7 @@ def _read_text(args: argparse.Namespace) -> str:
             return sys.stdin.read()
         path = Path(src).expanduser()
         if not path.is_file():
-            raise SystemExit(f"文件不存在：{path}")
+            raise SystemExit(f"文件不存在：{path.resolve()}（当前目录 {Path.cwd()}）")
         raw = path.read_bytes()
         try:
             return raw.decode("utf-8-sig")  # 容忍记事本加的 BOM

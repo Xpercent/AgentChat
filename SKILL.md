@@ -44,7 +44,7 @@ python run.py watch     # ②闹钟：阻塞等任务，任务一到就退出
 ```bash
 # 1. 干活，把结果整理成文本
 python run.py reply --id 3 --text "结果"      # 2. 交结果，二选一
-python run.py reply --id 3 --file 结果.md     #    长结果走文件（文件由你自己写）
+python run.py reply --id 3 --file 结果.md     #    长结果走文件（你写；路径按当前目录）
 python run.py watch                           # 3. 重新上闹钟（后台任务），再结束会话
 ```
 
