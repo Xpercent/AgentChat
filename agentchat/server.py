@@ -22,11 +22,12 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from . import __version__
+from .client import DEFAULT_HOST, DEFAULT_PORT
 from .store import TranscriptStore
 
 log = logging.getLogger("agentchat.server")
@@ -49,16 +50,10 @@ class AgentServer:
         self,
         *,
         data_dir: str = "data",
-        host: str = "127.0.0.1",
-        port: int = 18765,
         wait_timeout: float = 1200.0,
-        token: str | None = None,
     ) -> None:
         self.store = TranscriptStore(data_dir)
-        self.host = host
-        self.port = port
         self.wait_timeout = float(wait_timeout)
-        self.token = token
 
         self._tasks: dict[int, Task] = {}
         self._queue: asyncio.Queue[int] = asyncio.Queue()
@@ -127,8 +122,8 @@ class AgentServer:
         return {
             "service": "agentchat",
             "version": __version__,
-            "host": self.host,
-            "port": self.port,
+            "host": DEFAULT_HOST,
+            "port": DEFAULT_PORT,
             "data_dir": str(self.store.root),
             "queued": self._queue.qsize(),
             "pending": pending,
@@ -137,7 +132,6 @@ class AgentServer:
             "watching": self._watching,
             "uptime": round(time.time() - self._started_at, 1),
             "wait_timeout": self.wait_timeout,
-            "auth": bool(self.token),
         }
 
 
@@ -163,29 +157,15 @@ def create_app(server: AgentServer) -> FastAPI:
     )
     app.state.server = server
 
-    async def auth(
-        x_agent_token: str | None = Header(default=None),
-        authorization: str | None = Header(default=None),
-    ) -> None:
-        if not server.token:
-            return
-        supplied = x_agent_token
-        if not supplied and authorization and authorization.lower().startswith("bearer "):
-            supplied = authorization[7:].strip()
-        if supplied != server.token:
-            raise HTTPException(status_code=401, detail="token 无效或缺失")
-
-    guard = [Depends(auth)]
-
     @app.get("/")
     async def root() -> dict[str, Any]:
         return {"ok": True, **server.stats()}
 
-    @app.get("/health", dependencies=guard)
+    @app.get("/health")
     async def health() -> dict[str, Any]:
         return {"ok": True, **server.stats()}
 
-    @app.post("/task", dependencies=guard)
+    @app.post("/task")
     async def post_task(payload: TaskIn) -> Any:
         """Agent1 -> Agent2：提交任务文本。默认挂起直到 Agent2 交回结果。"""
         task = await server.submit(payload.text)
@@ -208,7 +188,7 @@ def create_app(server: AgentServer) -> FastAPI:
             )
         return {"ok": True, "id": task.id, "status": task.status, "reply": task.reply}
 
-    @app.get("/next", dependencies=guard)
+    @app.get("/next")
     async def get_next(wait: float = Query(60.0, ge=0, le=86400, description="最长等待秒数，0 表示不等待")) -> Any:
         """闹钟领取一个待处理任务（长轮询）。无任务时返回 204。"""
         server._watching += 1
@@ -220,7 +200,7 @@ def create_app(server: AgentServer) -> FastAPI:
             return Response(status_code=204)
         return {"ok": True, "id": task.id, "text": task.text, "created_at": task.created_at}
 
-    @app.post("/reply", dependencies=guard)
+    @app.post("/reply")
     async def post_reply(payload: ReplyIn) -> dict[str, Any]:
         """Agent2 侧交回结果，挂起的 /task 请求会被唤醒。"""
         existing = server._tasks.get(payload.id)
@@ -235,14 +215,14 @@ def create_app(server: AgentServer) -> FastAPI:
             raise HTTPException(status_code=409, detail=f"#{payload.id} 已经回复过了")
         return {"ok": True, "id": task.id, "status": task.status, "late": was_timeout}
 
-    @app.get("/result/{idx}", dependencies=guard)
+    @app.get("/result/{idx}")
     async def get_result(idx: int) -> dict[str, Any]:
         task = server._tasks.get(idx)
         if task is None:
             raise HTTPException(status_code=404, detail=f"未知的 id：{idx}")
         return {"ok": True, "id": task.id, "status": task.status, "reply": task.reply}
 
-    @app.post("/shutdown", dependencies=guard)
+    @app.post("/shutdown")
     async def shutdown() -> dict[str, Any]:
         """停掉中继。用独立线程延迟硬退出，保证响应能先发出去。"""
 

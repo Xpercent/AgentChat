@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """免安装启动器：在任何目录下都能这样调用本工具。
 
-    python <本文件路径> serve --port 18765
+    python <本文件路径> serve
     python <本文件路径> send --text "..."
 """
 

@@ -20,8 +20,6 @@ from . import client, hub
 from .client import AgentChatError
 
 EXIT_TASK = 0
-EXIT_NO_TASK = 2
-EXIT_TIMEOUT = 3
 EXIT_NETWORK = 4
 EXIT_NO_HUB = 5
 
@@ -33,31 +31,24 @@ def _rule(title: str) -> str:
     return f"{bar}\n {title}\n{bar}"
 
 
-def announce(task: dict, url: str) -> None:
+def announce(task: dict) -> None:
     """把任务和下一步动作打进 stdout —— 这是唤醒后唯一能看到的东西。"""
     idx = task.get("id")
     text = (task.get("text") or "").rstrip("\n")
-    conn = "" if url.rstrip("/") == client.DEFAULT_URL else f" --url {url}"
 
     print(_rule(f"agentchat 唤醒：收到任务 #{idx}"), flush=True)
     print(text, flush=True)
     print("", flush=True)
     print(_rule("醒来后三件事（做完就结束会话）"), flush=True)
     print(" 1. 干活，把结果整理成文本（临时文件只写 .tmp/）", flush=True)
-    print(f' 2. python run.py reply --id {idx} --text "结果"{conn}    # 短结果', flush=True)
-    print(f"    python run.py reply --id {idx} --file .tmp/结果.md{conn}   # 长结果，先 mkdir -p .tmp", flush=True)
-    print(f" 3. python run.py watch{conn}     # 重新上闹钟（后台任务），再结束会话", flush=True)
+    print(f' 2. python run.py reply --id {idx} --text "结果"    # 短结果', flush=True)
+    print(f"    python run.py reply --id {idx} --file .tmp/结果.md   # 长结果，先 mkdir -p .tmp", flush=True)
+    print(" 3. python run.py watch     # 重新上闹钟（后台任务），再结束会话", flush=True)
     print("=" * 62, flush=True)
 
 
-def run(
-    url: str,
-    *,
-    token: str | None = None,
-    wait: float = 3600.0,
-    once: bool = False,
-) -> int:
-    if not hub.is_alive(url, token):
+def run() -> int:
+    if not hub.is_alive():
         print(_rule("agentchat：中继没在运行，这不是任务"), flush=True)
         print("闹钟上不去。先把中继作为后台任务启动，再重新上闹钟：", flush=True)
         print("   python run.py serve      # 后台任务①：中继，常驻", flush=True)
@@ -68,7 +59,7 @@ def run(
     failures = 0
     while True:
         try:
-            task = client.next_task(url, token=token, wait=wait)
+            task = client.next_task(wait=3600.0)
         except AgentChatError as exc:
             failures += 1
             print(f"[agentchat] 领取失败（第 {failures} 次）：{exc}", file=sys.stderr, flush=True)
@@ -79,10 +70,7 @@ def run(
 
         failures = 0
         if task is None:
-            if once:
-                print(f"[agentchat] {wait:g}s 内没有任务", file=sys.stderr, flush=True)
-                return EXIT_NO_TASK
             continue  # 无缝续上下一轮长轮询，不留空档
 
-        announce(task, url)
+        announce(task)
         return EXIT_TASK

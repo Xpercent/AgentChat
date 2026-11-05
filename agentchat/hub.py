@@ -13,20 +13,20 @@ from . import client
 from .client import AgentChatError
 
 
-def is_alive(url: str, token: str | None = None, timeout: float = 2.0) -> bool:
-    """端口上有没有中继。401 也算活着（只是 token 不匹配）。"""
+def is_alive() -> bool:
+    """默认端口上有没有中继。"""
     try:
-        status, _ = client.request("GET", f"{url.rstrip('/')}/health", timeout=timeout, token=token)
+        status, _ = client.request("GET", "/health", timeout=2)
     except AgentChatError:
         return False
-    return status in (200, 401)
+    return status == 200
 
 
-def stop(url: str, token: str | None = None) -> bool:
-    if not is_alive(url, token):
+def stop() -> bool:
+    if not is_alive():
         return False
     try:
-        client.request("POST", f"{url.rstrip('/')}/shutdown", payload={}, timeout=5, token=token)
+        client.request("POST", "/shutdown", payload={}, timeout=5)
     except AgentChatError:
         return False
     return True
