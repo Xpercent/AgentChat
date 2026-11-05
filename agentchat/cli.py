@@ -3,7 +3,7 @@
 角色分工：
 
     Agent2  python run.py serve              中继（后台任务①，常驻）
-    Agent2  python run.py watch              闹钟（后台任务②，任务一到就退出）
+    Agent2  python run.py watch              闹钟（后台任务②，收到任务或满 9 分钟后退出）
     Agent2  python run.py reply --id 1 ...   交结果
     Agent1  python run.py send --text "..."  发任务（最多等 20 分钟）
     任意    python run.py stop              停中继
@@ -91,7 +91,7 @@ def _cmd_serve(args: argparse.Namespace) -> int:
         datefmt="%H:%M:%S",
     )
 
-    server = AgentServer(wait_timeout=args.wait_timeout)
+    server = AgentServer()
     app = create_app(server)
 
     line = "─" * 62
@@ -99,7 +99,6 @@ def _cmd_serve(args: argparse.Namespace) -> int:
     print(f" agentchat {__version__} · 中继常驻", flush=True)
     print(f" 地址      {client.DEFAULT_URL}", flush=True)
     print(f" 数据目录  {server.store.root}  (i{{id}}.md / o{{id}}.md)", flush=True)
-    print(f" 等待上限  {args.wait_timeout:g}s（Agent1 单次等结果）", flush=True)
     print(f" 闹钟      由 watch 挂载；本进程只负责收发，不会思考", flush=True)
     print(line, flush=True)
 
@@ -202,7 +201,7 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=(
             "Agent2 布置（各起一个后台任务，然后结束会话）：\n"
             "  python run.py serve                             # 中继，常驻\n"
-            "  python run.py watch                             # 闹钟，任务一到就结束\n"
+            "  python run.py watch                             # 闹钟，收到任务或满 9 分钟后结束\n"
             "Agent1 发任务：\n"
             "  python run.py send --text \"帮我查一下今天的行情\"    # 最多等 20 分钟\n"
             "Agent2 被唤醒后：\n"
@@ -215,10 +214,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_serve = sub.add_parser("serve", help="Agent2：启动中继（后台任务，常驻不退出）")
-    p_serve.add_argument("--wait-timeout", type=float, default=DEFAULT_WAIT, help="单次等结果上限（秒），默认 1200（20 分钟）")
     p_serve.set_defaults(func=_cmd_serve)
 
-    p_watch = sub.add_parser("watch", help="Agent2：上闹钟（后台任务，任务一到就退出并打印任务）")
+    p_watch = sub.add_parser("watch", help="Agent2：后台等待任务；收到任务或满 9 分钟时输出指引并退出")
     p_watch.set_defaults(func=_cmd_watch)
 
     p_send = sub.add_parser("send", help="Agent1：发送任务并等待结果（默认最多 20 分钟）")

@@ -87,10 +87,10 @@ def send_task(
     raise AgentChatError(f"提交任务失败：HTTP {status} {detail}", status=status, payload=body)
 
 
-def next_task(*, wait: float = 60.0) -> dict[str, Any] | None:
-    """Agent2：领取一个待处理任务；超时无任务返回 None。"""
+def next_task(*, wait: float = 60.0, timeout: float | None = None) -> dict[str, Any] | None:
+    """Agent2：领取任务；timeout 可将网络等待限制在 watch 的剩余生命周期内。"""
     status, body = request(
-        "GET", f"/next?wait={wait:g}", timeout=wait + 30
+        "GET", f"/next?wait={wait:g}", timeout=wait + 30 if timeout is None else timeout
     )
     if status == 204:
         return None
